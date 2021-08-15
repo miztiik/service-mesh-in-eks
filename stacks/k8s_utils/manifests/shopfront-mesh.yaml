@@ -1,0 +1,76 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: shopfront-gateway
+  namespace: miztiik-automation-ns
+spec:
+  selector:
+    # Which pods we want to expose as Istio router
+    # This label points to the default one installed from file istio-demo.yaml
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http-web
+      protocol: HTTP
+    # Here we specify which Kubernetes service names
+    # we want to serve through this Gateway
+    hosts:
+    - "miztiik-automation-ns/*"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: shopfront-virtual-service
+  namespace: miztiik-automation-ns
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - shopfront-gateway
+  http:
+  - route:
+    - destination:
+        host: shopfront-svc
+        subset: v1
+      weight: 50
+    - destination:
+        host: shopfront-svc
+        subset: v2
+      weight: 30
+    - destination:
+        host: shopfront-svc
+        subset: v3
+      weight: 15
+    - destination:
+        host: shopfront-svc
+        subset: v4
+      weight: 5
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: shopfront-svc
+  namespace: miztiik-automation-ns
+spec:
+  host: shopfront-svc
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+    trafficPolicy:
+      loadBalancer:
+        simple: RANDOM
+  - name: v2
+    trafficPolicy:
+      loadBalancer:
+        simple: ROUND_ROBIN
+    labels:
+      version: v2
+  - name: v3
+    labels:
+      version: v3
+  - name: v4
+    labels:
+      version: v4

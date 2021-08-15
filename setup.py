@@ -9,17 +9,17 @@ setuptools.setup(
     name="service_mesh_in_eks",
     version="0.0.1",
 
-    description="An empty CDK Python app",
+    description="service-mesh-in-eks",
     long_description=long_description,
     long_description_content_type="text/markdown",
 
     author="author",
 
-    package_dir={"": "service_mesh_in_eks"},
-    packages=setuptools.find_packages(where="service_mesh_in_eks"),
+    package_dir={"": "stacks"},
+    packages=setuptools.find_packages(where="stacks"),
 
     install_requires=[
-        "aws-cdk.core==1.113.0",
+        "aws-cdk.core==1.116.0",
     ],
 
     python_requires=">=3.6",

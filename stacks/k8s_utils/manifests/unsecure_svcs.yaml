@@ -1,0 +1,130 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: unsecure-ns
+  labels:
+    app: shopfront
+    role: security
+    istio-injection: enabled
+    project: service-mesh-in-eks
+    owner: miztiik-automation
+    compute_provider: on_demand
+    dept: engineering
+    team: blue-shirts
+  annotations:
+    contact: github.com/miztiik
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: unsecure-svc
+  namespace: unsecure-ns
+spec:
+  ports:
+  - name: http-unsecure
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: shopfront-nginx
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unsecure-nginx-deploy
+  namespace: unsecure-ns
+  labels:
+    app: unsecure-nginx
+    role: web
+    project: service-mesh-in-eks
+    owner: miztiik-automation
+    compute_provider: on_demand
+    dept: engineering
+    team: blue-shirts
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shopfront-nginx
+      role: web
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: shopfront-nginx
+        role: web
+        version: v1
+        project: service-mesh-in-eks
+        owner: miztiik-automation
+        compute_provider: on_demand
+        dept: engineering
+        team: blue-shirts
+    spec:
+      containers:
+      - name: nginx-container
+        # image: docker.io/kennethreitz/httpbin
+        image: nginx
+        command: ["sh", "-c", "echo $HOSTNAME'-unsecure:v1' > /usr/share/nginx/html/index.html;nginx -g 'daemon off;';"]
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "64Mi"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        ports:
+          - name: http-unsecure
+            containerPort: 80
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: unsecure-gateway
+  namespace: unsecure-ns
+spec:
+  selector:
+    istio: ingressgateway
+    # app: shopfront-nginx
+  servers:
+  - port:
+      number: 80
+      name: http-unsecure
+      protocol: HTTP
+    hosts:
+    - "un.com"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: unsecure-virtual-service
+  namespace: unsecure-ns
+spec:
+  hosts:
+  - "un.com"
+  gateways:
+  - unsecure-gateway
+  http:
+  - route:
+    - destination:
+        host: unsecure-svc
+        port:
+          number: 80
+        subset: v1
+      weight: 100
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: unsecure-svc
+  namespace: unsecure-ns
+spec:
+  host: unsecure-svc
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+    trafficPolicy:
+      loadBalancer:
+        simple: RANDOM
+

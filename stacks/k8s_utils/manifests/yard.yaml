@@ -1,0 +1,78 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: yard-01
+  labels:
+    app: yard-store
+    role: yard-01
+    project: service-mesh-in-eks
+    owner: miztiik-automation
+    compute_provider: on_demand
+    dept: engineering
+    team: red-shirts
+  annotations:
+    contact: github.com/miztiik
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yard-store-svc
+  namespace: yard-01
+spec:
+  ports:
+  - name: http-80
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: yard-store-nginx
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yard-store-deploy
+  namespace: yard-01
+  labels:
+    app: yard-store-nginx
+    role: web
+    project: service-mesh-in-eks
+    owner: miztiik-automation
+    compute_provider: on_demand
+    dept: engineering
+    team: red-shirts
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yard-store-nginx
+      role: web
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: yard-store-nginx
+        role: web
+        version: v1
+        project: service-mesh-in-eks
+        owner: miztiik-automation
+        compute_provider: on_demand
+        dept: engineering
+        team: red-shirts
+    spec:
+      containers:
+      - name: nginx-container
+        # image: docker.io/kennethreitz/httpbin
+        image: nginx
+        command: ["sh", "-c", "echo $HOSTNAME'-unsecure:v1' > /usr/share/nginx/html/index.html;nginx -g 'daemon off;';"]
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "64Mi"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        ports:
+          - name: http-80
+            containerPort: 80
+
